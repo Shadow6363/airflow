@@ -201,20 +201,32 @@ class _Stats(type):
             except (socket.gaierror, ImportError) as e:
                 log.warning("Could not configure StatsClient: %s, using DummyStatsLogger instead.", e)
 
+    def get_logger_address(self):
+        if conf.has_option('scheduler', 'statsd_socket_path'):
+            statsd_socket_path = conf.get('scheduler', 'statsd_socket_path')
+            if statsd_socket_path:
+                return {'socket_path': statsd_socket_path}
+        host = conf.get('scheduler', 'statsd_host')
+        port = conf.getint('scheduler', 'statsd_port')
+        return {'host': host, 'port': port}
+
     def get_statsd_logger(self):
-        from statsd import StatsClient
+        address = self.get_logger_address()
+        if 'socket_path' in address:
+            from statsd import UnixSocketStatsClient as StatsClient
+        else:
+            from statsd import StatsClient
         statsd = StatsClient(
-            host=conf.get('scheduler', 'statsd_host'),
-            port=conf.getint('scheduler', 'statsd_port'),
+            **address,
             prefix=conf.get('scheduler', 'statsd_prefix'))
         allow_list_validator = AllowListValidator(conf.get('scheduler', 'statsd_allow_list', fallback=None))
         return SafeStatsdLogger(statsd, allow_list_validator)
 
     def get_dogstatsd_logger(self):
+        address = self.get_logger_address()
         from datadog import DogStatsd
         dogstatsd = DogStatsd(
-            host=conf.get('scheduler', 'statsd_host'),
-            port=conf.getint('scheduler', 'statsd_port'),
+            **address,
             namespace=conf.get('scheduler', 'statsd_prefix'),
             constant_tags=self.get_constant_tags())
         dogstatsd_allow_list = conf.get('scheduler', 'statsd_allow_list', fallback=None)
