@@ -41,6 +41,15 @@ Add the following lines to your configuration file e.g. ``airflow.cfg``
     statsd_port = 8125
     statsd_prefix = airflow
 
+If you instead connect to StatsD over UDS, add the following lines to your configuration file e.g. ``airflow.cfg``
+
+.. code-block:: ini
+
+    [scheduler]
+    statsd_on = True
+    statsd_socket_path = /var/run/stats.sock
+    statsd_prefix = airflow
+
 If you want to avoid send all the available metrics to StatsD, you can configure an allow list of prefixes to send only
 the metrics that start with the elements of the list:
 
